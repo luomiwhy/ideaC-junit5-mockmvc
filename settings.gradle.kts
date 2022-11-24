@@ -1,0 +1,1 @@
+rootProject.name = "ideaC-junit5-mockmvc"
