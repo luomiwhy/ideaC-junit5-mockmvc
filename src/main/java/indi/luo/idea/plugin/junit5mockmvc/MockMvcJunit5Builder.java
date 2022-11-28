@@ -72,8 +72,8 @@ public class MockMvcJunit5Builder extends BaseBuilder {
 
     private String buildPostText(Section section) {
         String requestBuilder = "." + "post(\"" + section.getUri() + "\")\n" +
-                ".contentType(MediaType.APPLICATION_JSON)";
-        requestBuilder += ".content(JSON.toJSONString(vals))";
+                ".contentType(MediaType.APPLICATION_JSON)\n";
+        requestBuilder += ".content(JSON.toJSONString(vals))\n";
         return requestBuilder;
     }
 
