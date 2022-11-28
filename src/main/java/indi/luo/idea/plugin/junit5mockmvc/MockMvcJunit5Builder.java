@@ -2,15 +2,15 @@ package indi.luo.idea.plugin.junit5mockmvc;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.github.apigcc.core.schema.Method;
+import com.github.apigcc.core.schema.Row;
 import com.github.apigcc.core.schema.Section;
-import com.google.common.collect.Lists;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
-import com.intellij.psi.impl.source.PsiClassReferenceType;
 import com.intellij.psi.search.GlobalSearchScope;
 import org.apache.commons.collections.map.MultiValueMap;
 
-import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * author WangYi
@@ -32,7 +32,7 @@ public class MockMvcJunit5Builder extends BaseBuilder {
             psiClass.add(psiField);
         }
 
-        String methodText = buildMethodText(psiMethod, psiField, section);
+        String methodText = buildMethodText(psiMethod, section);
         PsiMethod psiMethod2 = elementFactory.createMethodFromText(methodText, psiClass);
         if (!containMethod(psiClass, psiMethod2)) {
             psiClass.add(psiMethod2);
@@ -40,16 +40,7 @@ public class MockMvcJunit5Builder extends BaseBuilder {
     }
 
 
-    private String buildMethodText(PsiMethod psiMethod, PsiField psiField, Section section) {
-        StringBuilder b = new StringBuilder();
-        ArrayList<String> params = Lists.newArrayList();
-        for (PsiParameter parameter : psiMethod.getParameterList().getParameters()) {
-            b.append(parameter.getType().getPresentableText()).append(" ").append(parameter.getName())
-                    .append(" = ")
-                    .append("null")
-                    .append(";").append(System.lineSeparator());
-            params.add(parameter.getName());
-        }
+    private String buildMethodText(PsiMethod psiMethod, Section section) {
         String getOrPost;
         if (section.getMethod() == Method.POST) {
             getOrPost = buildPostText(section);
@@ -57,10 +48,9 @@ public class MockMvcJunit5Builder extends BaseBuilder {
             getOrPost = buildGetText(section, psiMethod);
         }
 
-        String invoke = psiField.getName() + "." + psiMethod.getName() + "(" + String.join(", ", params) + ")";
         return "@Test\n" +
-                "    void " + psiMethod.getName() + "() {\n" +
-                "       " + b +
+                "    void " + psiMethod.getName() + "() throws Exception {\n" +
+//                "       " + b +
                 "       System.out.println(\n" +
                 "                mockMvc.perform(MockMvcRequestBuilders\n" +
                 "                                "+ getOrPost +
@@ -72,13 +62,14 @@ public class MockMvcJunit5Builder extends BaseBuilder {
     }
 
     private String buildGetText(Section section, PsiMethod psiMethod) {
-        String requestBuilder = "." + "get(\"" + section.getUri() + "\")\n";
-//        MultiValueMap vals = new MultiValueMap();
-
-        requestBuilder += ".params(vals)\n";
-//                ".queryParams(vals)\n";
-        return requestBuilder;
+        String s = "." + "get(\"" + section.getUri() + "\")\n";
+        for (Iterator<Map.Entry<String, JsonNode>> it = section.getParameter().fields(); it.hasNext(); ) {
+            Map.Entry<String, JsonNode> entry = it.next();
+            s += ".param(\"" + entry.getKey() + "\", \"" + entry.getValue().asText() + "\")\n";
+        }
+        return s;
     }
+
     private String buildPostText(Section section) {
         String requestBuilder = "." + "post(\"" + section.getUri() + "\")\n" +
                 ".contentType(MediaType.APPLICATION_JSON)";
