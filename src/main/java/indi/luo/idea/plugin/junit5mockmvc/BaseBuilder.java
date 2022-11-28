@@ -1,5 +1,6 @@
 package indi.luo.idea.plugin.junit5mockmvc;
 
+import com.github.apigcc.core.schema.Section;
 import com.google.common.collect.Lists;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.LangDataKeys;
@@ -49,6 +50,12 @@ public abstract class BaseBuilder {
             String testClassName = className + "Test";
             outputFile=outputFile.resolve(testClassName + "." + psiFile.getVirtualFile().getExtension());
 
+            String classPath = psiFile.getVirtualFile().getPath();
+            Section section = ControllerUtil.analyzeController(classPath, projectBasePath).getBooks().values()
+                    .stream().flatMap(book -> book.getChapters().stream())
+                        .flatMap(c -> c.getSections().stream())
+                        .filter(s -> s.getId().equals(psiMethod.getName()))
+                        .findFirst().get();
             PsiElementFactory elementFactory = JavaPsiFacade.getElementFactory(project);
             DumbService dumbService = DumbService.getInstance(project);
 
@@ -64,39 +71,44 @@ public abstract class BaseBuilder {
                 }
                 dumbService.runWithAlternativeResolveEnabled(()->{
                     PsiJavaFile pf = (PsiJavaFile) PsiManager.getInstance(project).findFile(getVF(outputFile));
-                    pf.setPackageName(packageName);
-                    for (String s : Lists.newArrayList(
-                            "com.alibaba.fastjson.JSON",
-                            "org.junit.jupiter.api.Test",
-                            "org.springframework.beans.factory.annotation.Autowired",
-                            "org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc",
-                            "org.springframework.boot.test.context.SpringBootTest",
-                            "org.springframework.http.MediaType",
-                            "org.springframework.test.web.servlet.MockMvc",
-                            "org.springframework.test.web.servlet.request.MockMvcRequestBuilders")) {
-                        PsiClass c = findClass(s);
-                        if (c != null) {
-                            pf.getImportList().add(elementFactory.createImportStatement(c));
-                        }
-                    }
-                    PsiClass testPsiClass = elementFactory.createClass(testClassName);
-                    testPsiClass.getModifierList().addAnnotation("org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc");
-                    testPsiClass.getModifierList().addAnnotation("org.springframework.boot.test.context.SpringBootTest");
+                    PsiClass testPsiClass = initTestClass(packageName, testClassName, elementFactory, pf);
 
-                    build(elementFactory, project, testPsiClass, psiMethod, className);
+                    build(elementFactory, project, testPsiClass, psiMethod, className, section);
                     pf.add(testPsiClass);
                 });
             }else {
                 PsiClass testPsiClass = findClass(packageName + "." + testClassName);
-                build(elementFactory, project, testPsiClass, psiMethod, className);
+                build(elementFactory, project, testPsiClass, psiMethod, className, section);
             }
             dumbService.runWithAlternativeResolveEnabled(() ->
                     FileEditorManager.getInstance(project).openFile(getVF(outputFile), true, true));
         });
     }
 
+    private PsiClass initTestClass(String packageName, String testClassName, PsiElementFactory elementFactory, PsiJavaFile pf) {
+        pf.setPackageName(packageName);
+        for (String s : Lists.newArrayList(
+                "com.alibaba.fastjson.JSON",
+                "org.junit.jupiter.api.Test",
+                "org.springframework.beans.factory.annotation.Autowired",
+                "org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc",
+                "org.springframework.boot.test.context.SpringBootTest",
+                "org.springframework.http.MediaType",
+                "org.springframework.test.web.servlet.MockMvc",
+                "org.springframework.test.web.servlet.request.MockMvcRequestBuilders")) {
+            PsiClass c = findClass(s);
+            if (c != null) {
+                pf.getImportList().add(elementFactory.createImportStatement(c));
+            }
+        }
+        PsiClass testPsiClass = elementFactory.createClass(testClassName);
+        testPsiClass.getModifierList().addAnnotation("org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc");
+        testPsiClass.getModifierList().addAnnotation("org.springframework.boot.test.context.SpringBootTest");
+        return testPsiClass;
+    }
+
     public abstract void build(PsiElementFactory elementFactory, Project project, PsiClass psiClass, PsiMethod psiMethod,
-                               String className);
+                               String className, Section section);
 
     protected boolean containFiled(PsiClass psiClass, PsiField psiField) {
         return psiClass.findFieldByName(psiField.getName(), true) != null;

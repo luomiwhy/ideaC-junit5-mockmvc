@@ -1,4 +1,3 @@
-import java.beans.AppletInitializer
 
 plugins {
     id("java")
@@ -10,11 +9,12 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
+    mavenLocal()
 }
 
-//dependencies {
-//    implementation("org.freemarker:freemarker:2.3.31")
-//}
+dependencies {
+    implementation("com.github.apigcc:apigcc-springmvc:1.7.1")
+}
 
 // Configure Gradle IntelliJ Plugin
 // Read more: https://plugins.jetbrains.com/docs/intellij/tools-gradle-intellij-plugin.html
