@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.github.apigcc.core.schema.Method;
 import com.github.apigcc.core.schema.Row;
 import com.github.apigcc.core.schema.Section;
+import com.intellij.lang.jvm.JvmParameter;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
 import com.intellij.psi.search.GlobalSearchScope;
 import org.apache.commons.collections.map.MultiValueMap;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -41,16 +43,23 @@ public class MockMvcJunit5Builder extends BaseBuilder {
 
 
     private String buildMethodText(PsiMethod psiMethod, Section section) {
-        String getOrPost;
+        String getOrPost, b="";
         if (section.getMethod() == Method.POST) {
             getOrPost = buildPostText(section);
+            PsiParameter parameter =
+                    (PsiParameter) Arrays.stream(psiMethod.getParameters())
+                            .filter(p -> p.hasAnnotation("org.springframework.web.bind.annotation.RequestBody"))
+                            .findFirst().get();
+//            ((PsiJavaFile)psiMethod.getContainingFile()).getImportList()
+//                    .add(elementFactory.createImportStatement(parameter.getType()));
+//            psiMethod.getContainingClass().getImplementsList().add(elementFactory.createImportStatement(c))
         } else {
             getOrPost = buildGetText(section, psiMethod);
         }
 
         return "@Test\n" +
                 "    void " + psiMethod.getName() + "() throws Exception {\n" +
-//                "       " + b +
+                b +
                 "       System.out.println(\n" +
                 "                mockMvc.perform(MockMvcRequestBuilders\n" +
                 "                                "+ getOrPost +

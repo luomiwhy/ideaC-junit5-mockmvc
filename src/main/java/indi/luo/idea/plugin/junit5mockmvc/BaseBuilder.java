@@ -28,6 +28,7 @@ public abstract class BaseBuilder {
 
     Path outputFile;
     Project project;
+    PsiElementFactory elementFactory;
 
     public void build(AnActionEvent event) {
         project = event.getProject();
@@ -36,6 +37,7 @@ public abstract class BaseBuilder {
         PsiFile psiFile = event.getData(LangDataKeys.PSI_FILE);
         if (psiFile == null) return;
         outputFile = Paths.get(projectBasePath, "src", "test", "java");
+        elementFactory = JavaPsiFacade.getElementFactory(project);
 
         WriteCommandAction.runWriteCommandAction(event.getProject(), () -> {
             PsiMethod psiMethod = (PsiMethod) event.getData(LangDataKeys.PSI_ELEMENT);
@@ -56,7 +58,6 @@ public abstract class BaseBuilder {
                         .flatMap(c -> c.getSections().stream())
                         .filter(s -> s.getId().equals(psiMethod.getName()))
                         .findFirst().get();
-            PsiElementFactory elementFactory = JavaPsiFacade.getElementFactory(project);
             DumbService dumbService = DumbService.getInstance(project);
 
             VirtualFile virtualFile = getVF(outputFile);
