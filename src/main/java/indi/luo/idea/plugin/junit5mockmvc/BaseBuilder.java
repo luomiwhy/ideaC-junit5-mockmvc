@@ -40,8 +40,8 @@ public abstract class BaseBuilder {
         elementFactory = JavaPsiFacade.getElementFactory(project);
 
         WriteCommandAction.runWriteCommandAction(event.getProject(), () -> {
-            PsiMethod psiMethod = (PsiMethod) event.getData(LangDataKeys.PSI_ELEMENT);
-            PsiClass psiClass = PsiTreeUtil.getParentOfType(psiMethod, PsiClass.class);
+            PsiMethod sourcePsiMethod = (PsiMethod) event.getData(LangDataKeys.PSI_ELEMENT);
+            PsiClass psiClass = PsiTreeUtil.getParentOfType(sourcePsiMethod, PsiClass.class);
             if (psiClass == null) return;
             if (psiClass.getNameIdentifier() == null) return;
             String className = psiClass.getNameIdentifier().getText();
@@ -56,7 +56,7 @@ public abstract class BaseBuilder {
             Section section = ControllerUtil.analyzeController(classPath, projectBasePath).getBooks().values()
                     .stream().flatMap(book -> book.getChapters().stream())
                         .flatMap(c -> c.getSections().stream())
-                        .filter(s -> s.getId().equals(psiMethod.getName()))
+                        .filter(s -> s.getId().equals(sourcePsiMethod.getName()))
                         .findFirst().get();
             DumbService dumbService = DumbService.getInstance(project);
 
@@ -74,12 +74,12 @@ public abstract class BaseBuilder {
                     PsiJavaFile pf = (PsiJavaFile) PsiManager.getInstance(project).findFile(getVF(outputFile));
                     PsiClass testPsiClass = initTestClass(packageName, testClassName, elementFactory, pf);
 
-                    build(elementFactory, project, testPsiClass, psiMethod, className, section);
+                    build(elementFactory, project, testPsiClass, sourcePsiMethod, className, section);
                     pf.add(testPsiClass);
                 });
             }else {
                 PsiClass testPsiClass = findClass(packageName + "." + testClassName);
-                build(elementFactory, project, testPsiClass, psiMethod, className, section);
+                build(elementFactory, project, testPsiClass, sourcePsiMethod, className, section);
             }
             dumbService.runWithAlternativeResolveEnabled(() ->
                     FileEditorManager.getInstance(project).openFile(getVF(outputFile), true, true));
@@ -89,7 +89,7 @@ public abstract class BaseBuilder {
     private PsiClass initTestClass(String packageName, String testClassName, PsiElementFactory elementFactory, PsiJavaFile pf) {
         pf.setPackageName(packageName);
         for (String s : Lists.newArrayList(
-                "com.alibaba.fastjson.JSON",
+                "com.fasterxml.jackson.databind.ObjectMapper",
                 "org.junit.jupiter.api.Test",
                 "org.springframework.beans.factory.annotation.Autowired",
                 "org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc",
@@ -108,7 +108,7 @@ public abstract class BaseBuilder {
         return testPsiClass;
     }
 
-    public abstract void build(PsiElementFactory elementFactory, Project project, PsiClass psiClass, PsiMethod psiMethod,
+    public abstract void build(PsiElementFactory elementFactory, Project project, PsiClass testPsiClass, PsiMethod sourcePsiMethod,
                                String className, Section section);
 
     protected boolean containFiled(PsiClass psiClass, PsiField psiField) {
