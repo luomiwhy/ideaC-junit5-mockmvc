@@ -1,6 +1,5 @@
 package indi.luo.idea.plugin.junit5mockmvc;
 
-import com.github.apigcc.core.schema.Section;
 import com.google.common.collect.Lists;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.LangDataKeys;
@@ -19,12 +18,19 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 /**
  * author WangYi
  * created on 2017/1/14.
  */
 public abstract class BaseBuilder {
+
+    static final String SLASH = "/";
+    List<String> excludeParamTypes = Lists.newArrayList("RedirectAttributes", "HttpServletRequest", "HttpServletResponse");
+    List<String> primitiveList = Lists.newArrayList("int", "boolean", "byte", "short", "long", "float", "double", "char",
+            "Boolean", "Byte", "Short", "Integer", "Long", "Float", "Double", "String",
+            "Date", "BigDecimal", "LocalDateTime", "BigInteger");
 
     Path outputFile;
     Project project;
@@ -53,11 +59,6 @@ public abstract class BaseBuilder {
             outputFile=outputFile.resolve(testClassName + "." + psiFile.getVirtualFile().getExtension());
 
             String classPath = psiFile.getVirtualFile().getPath();
-            Section section = ControllerUtil.analyzeController(classPath, projectBasePath).getBooks().values()
-                    .stream().flatMap(book -> book.getChapters().stream())
-                        .flatMap(c -> c.getSections().stream())
-                        .filter(s -> s.getId().equals(sourcePsiMethod.getName()))
-                        .findFirst().get();
             DumbService dumbService = DumbService.getInstance(project);
 
             VirtualFile virtualFile = getVF(outputFile);
@@ -74,12 +75,12 @@ public abstract class BaseBuilder {
                     PsiJavaFile pf = (PsiJavaFile) PsiManager.getInstance(project).findFile(getVF(outputFile));
                     PsiClass testPsiClass = initTestClass(packageName, testClassName, elementFactory, pf);
 
-                    build(elementFactory, project, testPsiClass, sourcePsiMethod, className, section);
+                    build(elementFactory, project, testPsiClass, sourcePsiMethod, className);
                     pf.add(testPsiClass);
                 });
             }else {
                 PsiClass testPsiClass = findClass(packageName + "." + testClassName);
-                build(elementFactory, project, testPsiClass, sourcePsiMethod, className, section);
+                build(elementFactory, project, testPsiClass, sourcePsiMethod, className);
             }
             dumbService.runWithAlternativeResolveEnabled(() ->
                     FileEditorManager.getInstance(project).openFile(getVF(outputFile), true, true));
@@ -109,7 +110,7 @@ public abstract class BaseBuilder {
     }
 
     public abstract void build(PsiElementFactory elementFactory, Project project, PsiClass testPsiClass, PsiMethod sourcePsiMethod,
-                               String className, Section section);
+                               String className);
 
     protected boolean containFiled(PsiClass psiClass, PsiField psiField) {
         return psiClass.findFieldByName(psiField.getName(), true) != null;
@@ -131,4 +132,7 @@ public abstract class BaseBuilder {
         return VirtualFileManager.getInstance().refreshAndFindFileByNioPath(outputFile);
     }
 
+    boolean isPrimitive(String typeName) {
+        return primitiveList.contains(typeName);
+    }
 }

@@ -13,7 +13,6 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.apigcc:apigcc-springmvc:1.7.1")
 }
 
 // Configure Gradle IntelliJ Plugin
