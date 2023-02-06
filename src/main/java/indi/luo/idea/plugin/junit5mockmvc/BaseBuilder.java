@@ -14,11 +14,13 @@ import com.intellij.psi.impl.source.PsiJavaFileImpl;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.util.PsiTreeUtil;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.StringJoiner;
 
 /**
  * author WangYi
@@ -38,11 +40,11 @@ public abstract class BaseBuilder {
 
     public void build(AnActionEvent event) {
         project = event.getProject();
-        String projectBasePath = project.getBasePath();
-        assert projectBasePath != null;
         PsiFile psiFile = event.getData(LangDataKeys.PSI_FILE);
         if (psiFile == null) return;
-        outputFile = Paths.get(projectBasePath, "src", "test", "java");
+        String modulePath = psiFile.getVirtualFile().getPath();
+        modulePath = modulePath.substring(0, modulePath.indexOf(String.join(File.separator, "src", "main", "java")));
+        outputFile = Paths.get(modulePath, "src", "test", "java");
         elementFactory = JavaPsiFacade.getElementFactory(project);
 
         WriteCommandAction.runWriteCommandAction(event.getProject(), () -> {
