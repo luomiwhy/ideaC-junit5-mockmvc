@@ -67,18 +67,10 @@ public abstract class BaseBuilder {
 
             VirtualFile virtualFile = getVF(outputFile);
             if (virtualFile == null || !virtualFile.exists()) {
-//                if (!outputFile.toFile().exists()) {
-//                    try {
-//                        Files.createDirectories(outputFile.getParent());
-//                        Files.createFile(outputFile);
-//                    } catch (IOException e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                }
+                PsiJavaFile pf = (PsiJavaFile) PsiFileFactory.getInstance(project)
+                        .createFileFromText(testClassName, JavaLanguage.INSTANCE, "");
+                virtualFile = pf.getVirtualFile();
                 dumbService.runWithAlternativeResolveEnabled(()->{
-                    PsiJavaFile pf = (PsiJavaFile) PsiFileFactory.getInstance(project)
-                            .createFileFromText(testClassName, JavaLanguage.INSTANCE, "");
-//                    PsiJavaFile pf = (PsiJavaFile) PsiManager.getInstance(project).findFile(getVF(outputFile));
                     PsiClass testPsiClass = initTestClass(packageName, testClassName, elementFactory, pf);
 
                     build(elementFactory, project, testPsiClass, sourcePsiMethod, className);
@@ -88,8 +80,9 @@ public abstract class BaseBuilder {
                 PsiClass testPsiClass = findClass(packageName + "." + testClassName);
                 build(elementFactory, project, testPsiClass, sourcePsiMethod, className);
             }
+            VirtualFile finalVirtualFile = virtualFile;
             dumbService.runWithAlternativeResolveEnabled(() ->
-                    FileEditorManager.getInstance(project).openFile(getVF(outputFile), true, true));
+                    FileEditorManager.getInstance(project).openFile(finalVirtualFile, true, true));
         });
     }
 
