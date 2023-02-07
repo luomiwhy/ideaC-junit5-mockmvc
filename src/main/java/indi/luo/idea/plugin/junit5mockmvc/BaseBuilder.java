@@ -1,6 +1,9 @@
 package indi.luo.idea.plugin.junit5mockmvc;
 
 import com.google.common.collect.Lists;
+import com.intellij.lang.Language;
+import com.intellij.lang.LanguageParserDefinitions;
+import com.intellij.lang.java.JavaLanguage;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.LangDataKeys;
 import com.intellij.openapi.command.WriteCommandAction;
@@ -60,21 +63,22 @@ public abstract class BaseBuilder {
             String testClassName = className + "Test";
             outputFile=outputFile.resolve(testClassName + "." + psiFile.getVirtualFile().getExtension());
 
-            String classPath = psiFile.getVirtualFile().getPath();
             DumbService dumbService = DumbService.getInstance(project);
 
             VirtualFile virtualFile = getVF(outputFile);
             if (virtualFile == null || !virtualFile.exists()) {
-                if (!outputFile.toFile().exists()) {
-                    try {
-                        Files.createDirectories(outputFile.getParent());
-                        Files.createFile(outputFile);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
+//                if (!outputFile.toFile().exists()) {
+//                    try {
+//                        Files.createDirectories(outputFile.getParent());
+//                        Files.createFile(outputFile);
+//                    } catch (IOException e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                }
                 dumbService.runWithAlternativeResolveEnabled(()->{
-                    PsiJavaFile pf = (PsiJavaFile) PsiManager.getInstance(project).findFile(getVF(outputFile));
+                    PsiJavaFile pf = (PsiJavaFile) PsiFileFactory.getInstance(project)
+                            .createFileFromText(testClassName, JavaLanguage.INSTANCE, "");
+//                    PsiJavaFile pf = (PsiJavaFile) PsiManager.getInstance(project).findFile(getVF(outputFile));
                     PsiClass testPsiClass = initTestClass(packageName, testClassName, elementFactory, pf);
 
                     build(elementFactory, project, testPsiClass, sourcePsiMethod, className);

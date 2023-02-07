@@ -124,7 +124,8 @@ public class MockMvcJunit5Builder extends BaseBuilder {
     }
 
     private List<String> getFieldFromClass(PsiType psiType) {
-        PsiClass aClass = findClass(psiType.getCanonicalText());
+        String psiTypeStr = psiType.getCanonicalText().split("<")[0];//去除泛型
+        PsiClass aClass = findClass(psiTypeStr);
         return Arrays.stream(aClass.getAllFields()).filter(psiField -> !psiField.hasModifier(JvmModifier.STATIC))
                 .map(PsiField::getName).collect(Collectors.toList());
     }
