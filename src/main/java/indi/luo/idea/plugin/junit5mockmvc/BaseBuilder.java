@@ -10,9 +10,11 @@ import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.psi.*;
+import com.intellij.psi.impl.file.PsiDirectoryFactory;
 import com.intellij.psi.impl.source.PsiJavaFileImpl;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.util.PsiTreeUtil;
@@ -61,26 +63,33 @@ public abstract class BaseBuilder {
                 outputFile = outputFile.resolve(s);
             }
             String testClassName = className + "Test";
-            outputFile=outputFile.resolve(testClassName + "." + psiFile.getVirtualFile().getExtension());
-
+            String testClassFile = testClassName + "." + psiFile.getVirtualFile().getExtension();
+            outputFile=outputFile.resolve(testClassFile);
+            PsiDirectory directory = null;
+            try {
+                VirtualFile directoryIfMissing = VfsUtil.createDirectoryIfMissing(outputFile.getParent().toString());
+                directory = PsiDirectoryFactory.getInstance(project).createDirectory(directoryIfMissing);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             DumbService dumbService = DumbService.getInstance(project);
 
-            VirtualFile virtualFile = getVF(outputFile);
-            if (virtualFile == null || !virtualFile.exists()) {
-                PsiJavaFile pf = (PsiJavaFile) PsiFileFactory.getInstance(project)
-                        .createFileFromText(testClassName, JavaLanguage.INSTANCE, "");
-                virtualFile = pf.getVirtualFile();
+            PsiJavaFile pf = (PsiJavaFile) directory.findFile(testClassFile);
+            if (pf == null ) {
+                PsiJavaFile pfNew = (PsiJavaFile) PsiFileFactory.getInstance(project)
+                        .createFileFromText(testClassFile, JavaLanguage.INSTANCE, "");
+                pf = (PsiJavaFile) directory.add(pfNew);
+                PsiJavaFile finalPf = pf;
                 dumbService.runWithAlternativeResolveEnabled(()->{
-                    PsiClass testPsiClass = initTestClass(packageName, testClassName, elementFactory, pf);
-
+                    PsiClass testPsiClass = initTestClass(packageName, testClassName, elementFactory, finalPf);
                     build(elementFactory, project, testPsiClass, sourcePsiMethod, className);
-                    pf.add(testPsiClass);
+                    finalPf.add(testPsiClass);
                 });
             }else {
                 PsiClass testPsiClass = findClass(packageName + "." + testClassName);
                 build(elementFactory, project, testPsiClass, sourcePsiMethod, className);
             }
-            VirtualFile finalVirtualFile = virtualFile;
+            VirtualFile finalVirtualFile = pf.getVirtualFile();
             dumbService.runWithAlternativeResolveEnabled(() ->
                     FileEditorManager.getInstance(project).openFile(finalVirtualFile, true, true));
         });
@@ -128,7 +137,7 @@ public abstract class BaseBuilder {
     }
 
     VirtualFile getVF(Path path) {
-        return VirtualFileManager.getInstance().refreshAndFindFileByNioPath(outputFile);
+        return VirtualFileManager.getInstance().refreshAndFindFileByNioPath(path);
     }
 
     boolean isPrimitive(String typeName) {
