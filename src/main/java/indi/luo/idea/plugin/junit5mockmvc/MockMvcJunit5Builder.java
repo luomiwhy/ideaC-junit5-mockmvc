@@ -1,17 +1,21 @@
 package indi.luo.idea.plugin.junit5mockmvc;
 
 import com.google.common.collect.Lists;
+
+import com.intellij.codeInsight.AnnotationUtil;
 import com.intellij.lang.jvm.JvmModifier;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
 import com.intellij.psi.search.GlobalSearchScope;
-import indi.luo.idea.plugin.junit5mockmvc.constant.RequestMethodEnum;
-import indi.luo.idea.plugin.junit5mockmvc.constant.WebAnnotation;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.WordUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import indi.luo.idea.plugin.junit5mockmvc.constant.RequestMethodEnum;
+import indi.luo.idea.plugin.junit5mockmvc.constant.WebAnnotation;
 
 /**
  * author WangYi
@@ -57,7 +61,7 @@ public class MockMvcJunit5Builder extends BaseBuilder {
             getOrPost = buildPostText(psiMethod);
             PsiParameter parameter =
                     (PsiParameter) Arrays.stream(psiMethod.getParameters())
-                            .filter(p -> p.hasAnnotation("org.springframework.web.bind.annotation.RequestBody"))
+                            .filter(p -> AnnotationUtil.isAnnotatingApplicable((PsiParameter)p, WebAnnotation.requestBodyFull))
                             .findFirst().get();
             ((PsiJavaFile) psiClass.getContainingFile()).getImportList()
                     .add(elementFactory.createImportStatement(findClass(parameter.getType().getCanonicalText())));
@@ -248,13 +252,14 @@ public class MockMvcJunit5Builder extends BaseBuilder {
     }
 
     private PsiAnnotation getMethodMapping(PsiMethod psiMethod) {
-        for (PsiAnnotation annotation : psiMethod.getAnnotations()) {
-            String text = annotation.getText();
-            if (text.contains("Mapping")) {
-                return annotation;
-            }
-        }
-        return null;
+        return AnnotationUtil.findAnnotationInHierarchy(psiMethod, WebAnnotation.mappingSet);
+//        for (PsiAnnotation annotation : ) {
+//            String text = annotation.getText();
+//            if (text.contains("Mapping")) {
+//                return annotation;
+//            }
+//        }
+//        return null;
     }
 
 }

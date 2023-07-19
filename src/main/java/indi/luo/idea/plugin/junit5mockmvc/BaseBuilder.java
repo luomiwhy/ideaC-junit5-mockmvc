@@ -82,8 +82,11 @@ public abstract class BaseBuilder {
                 PsiJavaFile finalPf = pf;
                 dumbService.runWithAlternativeResolveEnabled(()->{
                     PsiClass testPsiClass = initTestClass(packageName, testClassName, elementFactory, finalPf);
-                    build(elementFactory, project, testPsiClass, sourcePsiMethod, className);
-                    finalPf.add(testPsiClass);
+                    try {
+                        build(elementFactory, project, testPsiClass, sourcePsiMethod, className);
+                    } finally {
+                        finalPf.add(testPsiClass);
+                    }
                 });
             }else {
                 PsiClass testPsiClass = findClass(packageName + "." + testClassName);
