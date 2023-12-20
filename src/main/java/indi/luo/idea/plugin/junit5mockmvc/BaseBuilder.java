@@ -102,6 +102,7 @@ public abstract class BaseBuilder {
         pf.setPackageName(packageName);
         for (String s : Lists.newArrayList(
                 "com.fasterxml.jackson.databind.ObjectMapper",
+                "cn.hutool.json.JSONUtil",
                 "org.junit.jupiter.api.Test",
                 "org.springframework.beans.factory.annotation.Autowired",
                 "org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc",

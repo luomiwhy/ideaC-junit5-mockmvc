@@ -73,12 +73,12 @@ public class MockMvcJunit5Builder extends BaseBuilder {
         return "@Test\n" +
                 "    void " + psiMethod.getName() + "() throws Exception {\n" +
                 b +
-                "       System.out.println(mockMvc.perform(MockMvcRequestBuilders\n" +
+                "       String jsonStr = JSONUtil.formatJsonStr(mockMvc.perform(MockMvcRequestBuilders\n" +
                 "                                "+ getOrPost +
                 "                        ).andReturn()\n" +
                 "                        .getResponse()\n" +
-                "                        .getContentAsString()\n" +
-                "        );" +
+                "                        .getContentAsString());\n" +
+                "        System.out.println(jsonStr);" +
                 "    }";
     }
 
